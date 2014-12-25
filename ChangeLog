@@ -1,0 +1,7 @@
+2007-06-12  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* fpwpdic (register_content): Remove redundant code.
+
+2007-02-18  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* Initial release.

@@ -1,0 +1,47 @@
+#                                                         -*- Perl -*-
+# Copyright (c) 2007  Kazuhiro Ito
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+
+use strict;
+use warnings;
+
+use English;
+use Jcode;
+use FileHandle;
+
+use vars qw(%fpwpdic_conf);
+require "pdic-fpw.conf";
+
+ MAIN: {
+
+   my $catalogs_file_name = './catalogs.txt';
+   my $catalogs_file = new FileHandle;
+   my $contents;
+
+   if (!$catalogs_file->open("$catalogs_file_name", 'w')) {
+     die "$PROGRAM_NAME: failed to open the file, $ERRNO: $catalogs_file_name\n";
+   }
+
+   $contents = "[Catalog]
+FileName   = catalogs
+Type       = EPWING1
+Books      = 1
+
+[Book]
+Title      = \"".Jcode->new($fpwpdic_conf{'title'})."\"
+BookType   = $fpwpdic_conf{'type'}01
+Directory  = \"$fpwpdic_conf{'directory'}\"
+";
+  $catalogs_file->print($contents);
+
+  $catalogs_file->close();
+}

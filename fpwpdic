@@ -1,0 +1,196 @@
+#                                                         -*- Perl -*-
+# Copyright (c) 2007  Kazuhiro Ito
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+
+use strict;
+use warnings;
+use PDIC::Reader;
+use Getopt::Long;
+
+use English;
+use FreePWING::FPWUtils::FPWParser;
+use Jcode;
+use FIleHandle;
+
+use vars qw(%fpwpdic_conf);
+require "pdic-fpw.conf";
+
+use vars qw($level_character);
+$level_character = Jcode->new($fpwpdic_conf{'level_character'});
+
+
+ MAIN: {
+   my $time = time;
+
+   my ($fpwtext, $fpwheading, $fpwword2, $fpwcopyright);
+   initialize_fpwparser('text' => \$fpwtext,
+			'heading' => \$fpwheading,
+			'word2' => \$fpwword2,
+			'copyright' => \$fpwcopyright);
+
+   my $copyright_filename;
+   if ($fpwpdic_conf{'use_copyright'}) {
+     if ( $#ARGV < 1) {
+       die("Only a file ($ARGV[0]) is specified.");
+     }
+     $copyright_filename = $ARGV[$#ARGV];
+     register_copyright(\$fpwcopyright, $copyright_filename);
+   }
+
+   my @pdic_files = @ARGV;
+   my $pdic_filename;
+   if ($fpwpdic_conf{'use_copyright'}) {
+     undef $pdic_files[$#ARGV];
+   }
+
+   foreach $pdic_filename (@pdic_files) {
+     if (not -e $pdic_filename) {
+       die("'$pdic_filename' does not exist.");
+     }
+     my $pdic = new PDIC::Reader($pdic_filename);
+     my $indices = $pdic->get_indices();
+     my $index;
+
+     foreach $index (@$indices) {
+       my $entries = $pdic->get_data_section($index->{data_block_number});
+       my $entry;
+
+       foreach $entry (@$entries) {
+	 my ($pdic_heading, $pdic_text, $key);
+	 my ($text_position, $heading_position);
+
+	 $key = Jcode->new($entry->{headword});
+	 if(debug_mode ()) {
+	   print "Enrtry: $key\n";
+	 } else {
+	   print $key."\n";
+	 }
+
+	 $pdic_heading = heading_add_level_mark ($key, $entry->{level}, $fpwpdic_conf{'use_level_in_header'});
+	 if(debug_mode ()) {
+	   print "Heading: $key\n";
+	 }
+	 $heading_position = register_heading(\$fpwheading, $pdic_heading);
+
+	 $pdic_heading = $key;
+	 if ($fpwpdic_conf{'use_pronunciation'} && !($entry->{pronunciation} eq '.')) {
+	   $pdic_heading = $pdic_heading.' '.Jcode->new($entry->{pronunciation});
+	 }
+	 $pdic_heading = heading_add_level_mark ($pdic_heading, $entry->{level}, $fpwpdic_conf{'use_level'});
+
+	 if ($fpwpdic_conf{'use_example'} && !($entry->{example} eq '.')) {
+	   $pdic_text = Jcode->new($entry->{definition}."\n".$entry->{example});
+	 } else {
+	   $pdic_text = Jcode->new($entry->{definition});
+	 }
+	 if(debug_mode ()) {
+	   print "Content: \n$pdic_heading\n$pdic_text\n";
+	 }
+	 $text_position = register_content(\$fpwtext, $pdic_heading, $pdic_text);
+       
+	 register_search_entry(\$fpwword2, $key, $heading_position, $text_position);
+       }
+     }
+   }
+   printf("Elapsed time     : %8dsec.\n", time - $time);
+   printf("Number of entries: %8d\n", $fpwword2->entry_count());
+
+   finalize_fpwparser('text' => \$fpwtext,
+		      'heading' => \$fpwheading,
+		      'word2' => \$fpwword2,
+		      'copyright' => \$fpwcopyright);
+}
+
+sub trim_key {
+  my $str = $_[0];
+  $str =~ s/(^([\x80-\xff][\x80-\xff]|[\x20-\x7f]){1,127}).*$/$1/o;
+  return $str;
+}
+
+sub heading_add_level_mark {
+  my ($heading, $level, $flag) = @_;
+  
+  if ($flag < 0) {
+    $heading = $heading.' '.$level_character x $level;
+  } elsif ($flag > 0 && $flag <= $level) {
+    $heading = $level_character.$heading;
+  }
+  return $heading;
+}
+
+sub register_copyright {
+  my ($fpwcopyright, $filename) = @_;
+  my $handle = FileHandle->new();
+
+  if (!$handle->open($filename, 'r')) {
+    die "$PROGRAM_NAME: failed to open the file, $filename\n";
+  }
+
+  if(debug_mode ()) {
+    print "Copyright notice: $filename.\n";
+  }
+
+
+  $_ = $handle->getline();
+  for (; defined($_); $_ = $handle->getline()) {
+    $_ = Jcode->new($_);
+    ($$fpwcopyright->add_text($_)
+     && $$fpwcopyright->add_newline())
+	||  die "$PROGRAM_NAME: " . $$fpwcopyright->error_message() . "\n";
+  }
+}
+
+sub register_heading {
+  my ($fpwheading, $heading) = @_;
+
+  $$fpwheading->new_entry()
+      ||  die "$PROGRAM_NAME: " . $$fpwheading->error_message() . "\n";
+  $$fpwheading->add_text($heading)
+      ||  die "$PROGRAM_NAME: " . $$fpwheading->error_message() . "\n";
+
+  return $$fpwheading->entry_position();
+}
+
+sub register_content {
+  my ($fpwtext, $heading) = @_;
+  my @texts = split(/[\r\n]+/, $_[2]);
+  my $text;
+  
+  ($$fpwtext->new_entry()
+   && $$fpwtext->add_keyword_start()
+   && $$fpwtext->add_text($heading)
+   && $$fpwtext->add_keyword_end())
+      ||  die "$PROGRAM_NAME: " . $$fpwtext->error_message() . "\n";
+
+  foreach $text (@texts) {
+    $$fpwtext->add_newline()
+	||  die "$PROGRAM_NAME: " . $$fpwtext->error_message() . "\n";
+    $$fpwtext->add_text($text)
+	||  die "$PROGRAM_NAME: " . $$fpwtext->error_message() . "\n";
+  }
+  return $$fpwtext->entry_position();
+}
+
+sub register_search_entry {
+  my ($fpwword2, $key, $heading, $text) = @_;
+  
+  if ($fpwpdic_conf{'trim_long_index'}) {
+    $key = trim_key($key);
+  }
+
+  if(debug_mode ()) {
+    print "Entry key: $key\n\n";
+  }
+
+  $$fpwword2->add_entry($key, $heading, $text)
+	||  die "$PROGRAM_NAME: " . $$fpwword2->error_message() . "\n";
+}
