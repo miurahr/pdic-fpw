@@ -1,28 +1,44 @@
-*FreePWING program to convert PDIC dictionaries.
+=pod
+
+=encoding utf8
+
+=head1 FreePWING program to convert PDIC dictionaries.
 
 written by Kazuhiro Ito <kzhr@d1.dion.ne.jp>
 
-**これは何?
+=head2 これは何?
+
 FreePWING (*1) を利用して(テキスト形式ではなく)PDIC形式の辞書を
 JIS X 4081形式に変換するツールです。
 
 (*1) http://www.sra.co.jp/people/m-kasahr/freepwing/
 
-**インストール
+=head2 インストール
+
 下記のソフトウェアが必要です。
 
-*FreePWING
+=over 4
+
+=item * FreePWING
+
 もちろん。
 
-*PDIC Toolkit http://lambdapage.org/lexiko/tool-kit/pdic-toolkit.html
+=item * PDIC Toolkit http://lambdapage.org/lexiko/tool-kit/pdic-toolkit.html
 
-*Jcode.pm http://openlab.jp/Jcode/
+=item * Jcode.pm http://openlab.jp/Jcode/
+
 CPANからも入手可能なはずです。
+
+=back
 
 このツール自体のインストールは任意のディレクトリに展開するだけです。
 
-**使い方
-*変換準備
+=head2 使い方
+
+=over 4
+
+=item 1 変換準備
+
 Makefile の SOURCES = に記述されている辞書ファイル名を設定して下さい。
 複数の辞書を指定することができます。
 
@@ -33,27 +49,50 @@ Makefile の SOURCES = に記述されている辞書ファイル名を設定し
 
 著作権表示を行う場合は COPYRIGHT_FILE = にファイル名を指定して下さい。
 
-*変換
+=item 1 変換
+
+=begin text
+
 $ fpwmake 
+
+=end text
 
 で辞書(HONMON ファイル)を
 
+=begin text
+
 $ fpwmake catalogs
+
+=end text
 
 で CATALOGS ファイルを
 
+=begin text
+
 $ fpwmake package
+
+=end text
 
 で辞書をパッケージしたzipファイルを生成します。
 fpwmake コマンドの実行時に
 
+=begin text
+
 Makefile:34: warning: overriding commands for target `archive-directory'
 fpwutils.mk:607: warning: ignoring old commands for target `archive-directory'
 
+=end text
+
 のような warning が出ますが正常です。
 
-**ライセンス
+=back
+
+=head2 ライセンス
+
 GPL v2 に従います。同梱のCOPYINGファイルを参照して下さい。
 
-**その他
+=head2 その他
+
 辞書の著作権・ライセンスには十分に注意して下さい。
+
+=cut
