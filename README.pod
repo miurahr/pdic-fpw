@@ -11,7 +11,6 @@ written by Kazuhiro Ito <kzhr@d1.dion.ne.jp>
 FreePWING (*1) を利用して(テキスト形式ではなく)PDIC形式の辞書を
 JIS X 4081形式に変換するツールです。
 
-(*1) http://www.sra.co.jp/people/m-kasahr/freepwing/
 
 =head2 インストール
 
@@ -20,14 +19,14 @@ JIS X 4081形式に変換するツールです。
 =over 4
 
 =item * FreePWING
+ http://www.sra.co.jp/people/m-kasahr/freepwing/
 
-もちろん。
+=item * PDIC Toolkit
+ https://github.com/miurahr/pdic-toolkit
 
-=item * PDIC Toolkit http://lambdapage.org/lexiko/tool-kit/pdic-toolkit.html
-
-=item * Jcode.pm http://openlab.jp/Jcode/
-
-CPANからも入手可能なはずです。
+=item * Jcode.pm
+ http://openlab.jp/Jcode/
+ CPANからも入手可能なはずです。
 
 =back
 
